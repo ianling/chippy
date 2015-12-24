@@ -1,1 +1,8 @@
-Placeholder
+CHIP-8 emulator written in python
+
+Resources:
+https://en.wikipedia.org/wiki/CHIP-8#Virtual_machine_description
+http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
+https://wiki.python.org/moin/BitManipulation
+http://www.tutorialspoint.com/python/python_classes_objects.htm
+https://github.com/metulburr/pong/blob/master/data/control.py
