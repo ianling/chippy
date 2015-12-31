@@ -6,14 +6,14 @@ class Chip8:
     def __init__(self, name):
         self.rom = open(name, "rb")
         self.memory = [0x0]*4096
-        self.stack = [None]*17
+        self.stack = [None]*16
         self.sp = 0
-        self.v = [0]*17
+        self.v = [0]*16
         self.i = 0
         self.pc = 0x200
         self.delayTimer = None
         self.soundTimer = None
-        self.key = [0]*17
+        self.key = [0]*16
         # via http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter
         self.fontSet = [0xF0, 0x90, 0x90, 0x90, 0xF0,  # 0
                         0x20, 0x60, 0x20, 0x20, 0x70,  # 1
@@ -55,7 +55,8 @@ class Chip8:
         if opcode == "00E0": # clear screen
             pass
         elif opcode == "00EE": # return from subroutine
-            pass
+            self.sp -= 1
+            self.pc = self.stack[self.sp]
 
         # 1NNN - Jumps to address NNN
         elif opcode[0] == "1":
@@ -64,8 +65,10 @@ class Chip8:
 
         # 2NNN - Calls subroutine at NNN
         elif opcode[0] == "2":
+            self.stack[self.sp] = self.pc
+            self.sp += 1
+            self.pc = opcode[1:]
             pcIncrementBy = 0
-            pass
 
         # 3XNN - Skips the next instruction if V[X] == NN
         elif opcode[0] == "3":
@@ -109,11 +112,25 @@ class Chip8:
         elif opcode[0] == "8" and opcode[3] == "3":
             self.v[int(opcode[1],16)] = hex(int(self.v[int(opcode[1],16)],16) ^ int(self.v[int(opcode[2],16)], 16))[2:]
 
-        # 8XY4 - Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't
+        # 8XY4 - Sets V[X] += V[Y]. If V[X] + V[Y] > 255, then V[0xF] is set to 1, else set to 0
+        elif opcode[0] == "8" and opcode[3] == "4":
+            intVX = int(self.v[int(opcode[1],16)], 16)
+            intVY = int(self.v[int(opcode[2],16)], 16)
+            if intVX + intVY > 255:
+                self.v[0xf] = 1
+            else:
+                self.v[0xf] = 0
+            self.v[int(opcode[1],16)] = hex(intVX + intVY)[2:]
 
-
-        # 8XY5 - VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't
-
+        # 8XY5 - Sets V[X]-= V[Y]. If V[X] - V[Y] < 0, then VF is set to 0, else set to 1
+        elif opcode[0] == "8" and opcode[3] == "5":
+            intVX = int(self.v[int(opcode[1],16)], 16)
+            intVY = int(self.v[int(opcode[2],16)], 16)
+            if intVX - intVY < 0:
+                self.v[0xf] = 0
+            else:
+                self.v[0xf] = 1
+            self.v[int(opcode[1],16)] = hex(intVX - intVY)[2:]
 
         # 8XY6 - Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
 
