@@ -50,11 +50,11 @@ class Chip8:
         opcodeLastByte = str(self.memory[self.pc+1])
         opcode = opcodeFirstByte + opcodeLastByte
         print opcode
-        pcIncrementBy = 2 # amount to increase pc by after cycle. 2 bytes by default
+        pcIncrementBy = 2  # amount to increase pc by after cycle. 2 bytes by default
 
-        if opcode == "00E0": # clear screen
+        if opcode == "00E0":  # clear screen
             pass
-        elif opcode == "00EE": # return from subroutine
+        elif opcode == "00EE":  # return from subroutine
             self.sp -= 1
             self.pc = self.stack[self.sp]
 
@@ -67,23 +67,23 @@ class Chip8:
         elif opcode[0] == "2":
             self.stack[self.sp] = self.pc
             self.sp += 1
-            self.pc = opcode[1:]
+            self.pc = int(opcode[1:], 16)
             pcIncrementBy = 0
 
         # 3XNN - Skips the next instruction if V[X] == NN
         elif opcode[0] == "3":
-            if self.v[int(opcode[1],16)] == opcodeLastByte:
-                pcIncrementBy = 4 # jump ahead 4 bytes instead of the usual 2
+            if self.v[int(opcode[1], 16)] == opcodeLastByte:
+                pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
         # 4XNN - Skips the next instruction if V[X] != NN
         elif opcode[0] == "4":
-            if self.v[int(opcode[1],16)] != opcodeLastByte:
-                pcIncrementBy = 4 # jump ahead 4 bytes instead of the usual 2
+            if self.v[int(opcode[1], 16)] != opcodeLastByte:
+                pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
         # 5XY0 - Skips the next instruction if V[X] == V[Y]
         elif opcode[0] == "5":
-            if self.v[int(opcode[1],16)] == self.v[int(opcode[2],16)]:
-                pcIncrementBy = 4 # jump ahead 4 bytes instead of the usual 2
+            if self.v[int(opcode[1], 16)] == self.v[int(opcode[2],16)]:
+                pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
         # 6XNN - Sets V[X] to NN
         elif opcode[0] == "6":
@@ -98,24 +98,24 @@ class Chip8:
 
         # 8XY0 - Sets V[X] = V[Y]
         elif opcode[0] == "8" and opcode[3] == "0":
-            self.v[int(opcode[1],16)] = self.v[int(opcode[2],16)]
+            self.v[int(opcode[1], 16)] = self.v[int(opcode[2], 16)]
 
         # 8XY1 - Sets V[X] = V[X] | V[Y]
         elif opcode[0] == "8" and opcode[3] == "1":
-            self.v[int(opcode[1],16)] = hex(int(self.v[int(opcode[1],16)],16) | int(self.v[int(opcode[2],16)], 16))[2:]
+            self.v[int(opcode[1], 16)] = hex(int(self.v[int(opcode[1], 16)], 16) | int(self.v[int(opcode[2], 16)], 16))[2:]
 
         # 8XY2 - Sets V[X] = V[X] & V[Y]
         elif opcode[0] == "8" and opcode[3] == "2":
-            self.v[int(opcode[1],16)] = hex(int(self.v[int(opcode[1],16)],16) & int(self.v[int(opcode[2],16)], 16))[2:]
+            self.v[int(opcode[1], 16)] = hex(int(self.v[int(opcode[1], 16)], 16) & int(self.v[int(opcode[2], 16)], 16))[2:]
 
         # 8XY3 - Sets V[X] = V[X] ^ V[Y]
         elif opcode[0] == "8" and opcode[3] == "3":
-            self.v[int(opcode[1],16)] = hex(int(self.v[int(opcode[1],16)],16) ^ int(self.v[int(opcode[2],16)], 16))[2:]
+            self.v[int(opcode[1], 16)] = hex(int(self.v[int(opcode[1], 16)], 16) ^ int(self.v[int(opcode[2], 16)], 16))[2:]
 
         # 8XY4 - Sets V[X] += V[Y]. If V[X] + V[Y] > 255, then V[0xF] is set to 1, else set to 0
         elif opcode[0] == "8" and opcode[3] == "4":
-            intVX = int(self.v[int(opcode[1],16)], 16)
-            intVY = int(self.v[int(opcode[2],16)], 16)
+            intVX = int(self.v[int(opcode[1], 16)], 16)
+            intVY = int(self.v[int(opcode[2], 16)], 16)
             if intVX + intVY > 255:
                 self.v[0xf] = 1
             else:
@@ -124,13 +124,13 @@ class Chip8:
 
         # 8XY5 - Sets V[X]-= V[Y]. If V[X] - V[Y] < 0, then VF is set to 0, else set to 1
         elif opcode[0] == "8" and opcode[3] == "5":
-            intVX = int(self.v[int(opcode[1],16)], 16)
-            intVY = int(self.v[int(opcode[2],16)], 16)
+            intVX = int(self.v[int(opcode[1], 16)], 16)
+            intVY = int(self.v[int(opcode[2], 16)], 16)
             if intVX - intVY < 0:
                 self.v[0xf] = 0
             else:
                 self.v[0xf] = 1
-            self.v[int(opcode[1],16)] = hex(intVX - intVY)[2:]
+            self.v[int(opcode[1], 16)] = hex(intVX - intVY)[2:]
 
         # 8XY6 - Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
 
