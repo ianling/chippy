@@ -1,9 +1,9 @@
-import array
 import binascii
 from random import randint
+import pygame
 
 class Chip8:
-    def __init__(self, name):
+    def __init__(self, display, name):
         self.rom = open(name, "rb")
         self.memory = [0x0]*4096
         self.stack = [None]*16
@@ -14,6 +14,8 @@ class Chip8:
         self.delayTimer = None
         self.soundTimer = None
         self.key = [0]*16
+        self.display = display
+        self.pixelArray = [[False for y in range(32)] for x in range(64)]
         # via http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter
         self.fontSet = [0xF0, 0x90, 0x90, 0x90, 0xF0,  # 0
                         0x20, 0x60, 0x20, 0x20, 0x70,  # 1
@@ -60,7 +62,7 @@ class Chip8:
 
         # 1NNN - Jumps to address NNN
         elif opcode[0] == "1":
-            self.pc = int(opcode[1:],16)
+            self.pc = int(opcode[1:], 16)
             pcIncrementBy = 0
 
         # 2NNN - Calls subroutine at NNN
@@ -82,7 +84,7 @@ class Chip8:
 
         # 5XY0 - Skips the next instruction if V[X] == V[Y]
         elif opcode[0] == "5":
-            if self.v[int(opcode[1], 16)] == self.v[int(opcode[2],16)]:
+            if self.v[int(opcode[1], 16)] == self.v[int(opcode[2], 16)]:
                 pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
         # 6XNN - Sets V[X] to NN
@@ -93,8 +95,7 @@ class Chip8:
         elif opcode[0] == "7":
             vx = int(self.v[int(opcode[1], 16)], 16)
             nn = int(opcodeLastByte, 16)
-            sum = hex(vx + nn)[2:]
-            self.v[int(opcode[1], 16)] = sum
+            self.v[int(opcode[1], 16)] = hex(vx + nn)[2:]
 
         # 8XY0 - Sets V[X] = V[Y]
         elif opcode[0] == "8" and opcode[3] == "0":
@@ -120,7 +121,7 @@ class Chip8:
                 self.v[0xf] = 1
             else:
                 self.v[0xf] = 0
-            self.v[int(opcode[1],16)] = hex(intVX + intVY)[2:]
+            self.v[int(opcode[1], 16)] = hex(intVX + intVY)[2:]
 
         # 8XY5 - Sets V[X]-= V[Y]. If V[X] - V[Y] < 0, then VF is set to 0, else set to 1
         elif opcode[0] == "8" and opcode[3] == "5":
@@ -138,7 +139,6 @@ class Chip8:
             binVX = bin(intVX)
             self.v[int(opcode[1], 16)] = intVX >> 1
             self.v[0xf] = binVX[-1]
-
 
         # 8XY7 - Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
         elif opcode[0] == "8" and opcode[3] == "7":
@@ -160,8 +160,7 @@ class Chip8:
         # 9XY0 - Skips the next instruction if VX doesn't equal VY.
         elif opcodeFirstByte[0] == "9":
             if self.v[int(opcode[1], 16)] != self.v[int(opcode[2], 16)]:
-                pcIncrementBy = 4 # jump ahead 4 bytes instead of the usual 2
-
+                pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
         # ANNN - Sets I to the address NNN
         elif opcodeFirstByte[0] == "A":
@@ -169,8 +168,7 @@ class Chip8:
 
         # CXNN - Sets V[X] to the result of a bitwise and operation on a random number and NN.
         elif opcodeFirstByte[0] == "C":
-            self.v[int(opcode[1], 16)] = hex(int(opcode[2:], 16) & randint(0,255))[2:]
-
+            self.v[int(opcode[1], 16)] = hex(int(opcode[2:], 16) & randint(0, 255))[2:]
 
         # DXYN - Sprites stored in memory at location in index register (I), 8bits wide.
         #        Wraps around the screen. If when drawn, it clears a pixel,
@@ -180,7 +178,20 @@ class Chip8:
         #        N is the number of 8bit rows that need to be drawn.
         #        If N is greater than 1, second line continues at position V[X], V[Y+1], and so on.
         elif opcodeFirstByte[0] == "D":
-            pass
+            intVX = int(self.v[int(opcode[1], 16)], 16)
+            intVY = int(self.v[int(opcode[2], 16)], 16)
+            height = int(opcode[3], 16)
+            for iIterator in range(0,height+1):
+                spriteByteBinary = format(int(self.memory[int(self.i,16)+iIterator], 16), '#010b')[2:]  # padded with zeroes
+                for bitIterator in range(0,8):
+                    if spriteByteBinary[bitIterator] == 1:  # need to toggle these pixels
+                        if self.pixelArray[intVX][intVY] == True:
+                            color = (0, 0, 0)  # black
+                            self.v[0xf] = 1  # we're clearing a pixel, set V[F] = 1
+                        else:
+                            color = (255, 255, 255)  # white
+                        pygame.draw.rect(self.display, color, (intVX+(bitIterator*8),intVY+(height*8),8,8))
+                        self.pixelArray[intVX][intVY] = not self.pixelArray[intVX][intVY]  # toggle the pixel
 
         # EX9E - Skips the next instruction if the key stored in VX is pressed.
         elif opcodeFirstByte[0] == "E" and opcodeLastByte == "9E":
@@ -224,10 +235,11 @@ class Chip8:
         #       place the hundreds digit in memory at location in I,
         #       the tens digit at location I+1, and the ones digit at location I+2.)
         elif opcodeFirstByte[0] == "F" and opcodeLastByte == "33":
-            intVX = format(int(self.v[int(opcode[1], 16)], 16), '03') # padded with zeroes if <100 or <10
-            self.memory[int(self.i, 16)] = intVX[0]
-            self.memory[int(self.i, 16)+1] = intVX[1]
-            self.memory[int(self.i, 16)+2] = intVX[2]
+            intVX = format(int(self.v[int(opcode[1], 16)], 16), '03')  # padded with zeroes if <100 or <10
+            print str(intVX)
+            self.memory[int(self.i, 16)] = hex(int(intVX[0]))[2:]
+            self.memory[int(self.i, 16)+1] = hex(int(intVX[1]))[2:]
+            self.memory[int(self.i, 16)+2] = hex(int(intVX[2]))[2:]
 
         # FX55- Stores V0 to VX (including VX) in memory starting at address I.
         elif opcodeFirstByte[0] == "F" and opcodeLastByte == "55":

@@ -14,11 +14,12 @@ def main():
     #see https://github.com/metulburr/pong/blob/master/data/control.py
     #graphics = 64x32
     pygame.init()
-    display = pygame.display.set_mode((512, 256))
+#    display = pygame.display.set_mode((512, 256))
     pygame.display.set_caption('chippy')
     clock = pygame.time.Clock()
 
-    chip8 = Chip8('M:/BACKUPS/Coding/Python/roms/PONG')
+#    chip8 = Chip8('M:/BACKUPS/Coding/Python/roms/PONG')
+    chip8 = Chip8(pygame.display.set_mode((512, 256)), '/home/ianl/chip8/roms/PONG')
 
     while True:
         chip8.emulateCycle()
