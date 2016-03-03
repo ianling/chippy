@@ -5,34 +5,34 @@ import pygame
 class Chip8:
     def __init__(self, display, name):
         self.rom = open(name, "rb")
-        self.memory = [0x0]*4096
+        self.memory = ['00']*4096  # values stored as hex
         self.stack = [None]*16
         self.sp = 0
-        self.v = [0]*16
-        self.i = 0
+        self.v = ['00']*16  # values stored as hex
+        self.i = '00'  # value stored as hex
         self.pc = 0x200
-        self.delayTimer = None
-        self.soundTimer = None
+        self.delayTimer = '00'  # value stored as hex
+        self.soundTimer = '00'  # value stored as hex
         self.key = [0]*16
         self.display = display
         self.pixelArray = [[False for y in range(32)] for x in range(64)]
         # via http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter
-        self.fontSet = [0xF0, 0x90, 0x90, 0x90, 0xF0,  # 0
-                        0x20, 0x60, 0x20, 0x20, 0x70,  # 1
-                        0xF0, 0x10, 0xF0, 0x80, 0xF0,  # 2
-                        0xF0, 0x10, 0xF0, 0x10, 0xF0,  # 3
-                        0x90, 0x90, 0xF0, 0x10, 0x10,  # 4
-                        0xF0, 0x80, 0xF0, 0x10, 0xF0,  # 5
-                        0xF0, 0x80, 0xF0, 0x90, 0xF0,  # 6
-                        0xF0, 0x10, 0x20, 0x40, 0x40,  # 7
-                        0xF0, 0x90, 0xF0, 0x90, 0xF0,  # 8
-                        0xF0, 0x90, 0xF0, 0x10, 0xF0,  # 9
-                        0xF0, 0x90, 0xF0, 0x90, 0x90,  # A
-                        0xE0, 0x90, 0xE0, 0x90, 0xE0,  # B
-                        0xF0, 0x80, 0x80, 0x80, 0xF0,  # C
-                        0xE0, 0x90, 0x90, 0x90, 0xE0,  # D
-                        0xF0, 0x80, 0xF0, 0x80, 0xF0,  # E
-                        0xF0, 0x80, 0xF0, 0x80, 0x80]  # F
+        self.fontSet = ['F0', '90', '90', '90', 'F0',  # 0
+                        '20', '60', '20', '20', '70',  # 1
+                        'F0', '10', 'F0', '80', 'F0',  # 2
+                        'F0', '10', 'F0', '10', 'F0',  # 3
+                        '90', '90', 'F0', '10', '10',  # 4
+                        'F0', '80', 'F0', '10', 'F0',  # 5
+                        'F0', '80', 'F0', '90', 'F0',  # 6
+                        'F0', '10', '20', '40', '40',  # 7
+                        'F0', '90', 'F0', '90', 'F0',  # 8
+                        'F0', '90', 'F0', '10', 'F0',  # 9
+                        'F0', '90', 'F0', '90', '90',  # A
+                        'E0', '90', 'E0', '90', 'E0',  # B
+                        'F0', '80', '80', '80', 'F0',  # C
+                        'E0', '90', '90', '90', 'E0',  # D
+                        'F0', '80', 'F0', '80', 'F0',  # E
+                        'F0', '80', 'F0', '80', '80']  # F
         # store fontset in memory
         for index, byte in enumerate(self.fontSet):
             self.memory[index] = byte
@@ -74,6 +74,9 @@ class Chip8:
 
         # 3XNN - Skips the next instruction if V[X] == NN
         elif opcode[0] == "3":
+            print '**DEBUG**'
+            print opcode
+            print self.v
             if self.v[int(opcode[1], 16)] == opcodeLastByte:
                 pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
@@ -182,9 +185,11 @@ class Chip8:
             intVY = int(self.v[int(opcode[2], 16)], 16)
             height = int(opcode[3], 16)
             for iIterator in range(0,height+1):
-                spriteByteBinary = format(int(self.memory[int(self.i,16)+iIterator], 16), '#010b')[2:]  # padded with zeroes
+                spriteByteBinary = format(int(self.memory[int(self.i,16)+iIterator], 16), '010b')  # padded with zeroes
+                print spriteByteBinary
                 for bitIterator in range(0,8):
                     if spriteByteBinary[bitIterator] == 1:  # need to toggle these pixels
+                        print 'drawing at ' + str(intVX) + ',' + str(intVY)
                         if self.pixelArray[intVX][intVY] == True:
                             color = (0, 0, 0)  # black
                             self.v[0xf] = 1  # we're clearing a pixel, set V[F] = 1
@@ -236,7 +241,6 @@ class Chip8:
         #       the tens digit at location I+1, and the ones digit at location I+2.)
         elif opcodeFirstByte[0] == "F" and opcodeLastByte == "33":
             intVX = format(int(self.v[int(opcode[1], 16)], 16), '03')  # padded with zeroes if <100 or <10
-            print str(intVX)
             self.memory[int(self.i, 16)] = hex(int(intVX[0]))[2:]
             self.memory[int(self.i, 16)+1] = hex(int(intVX[1]))[2:]
             self.memory[int(self.i, 16)+2] = hex(int(intVX[2]))[2:]
@@ -254,6 +258,11 @@ class Chip8:
                 self.v[vIterator] = self.memory[int(self.i, 16)+vIterator]
 
         self.pc += pcIncrementBy
+        # decrement the timers on every tick
+        if int(self.delayTimer, 16) > 0:
+            self.delayTimer = format(int(self.delayTimer, 16)-1, '02x')  # format(...) = 'ff'
+        if int(self.soundTimer, 16) > 0:
+            self.soundTimer = format(int(self.soundTimer, 16)-1, '02x')
 
     def getDrawFlag(self):
         return False
