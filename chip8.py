@@ -2,6 +2,7 @@ import binascii
 from random import randint
 import pygame
 
+
 class Chip8:
     def __init__(self, display, name):
         self.rom = open(name, "rb")
@@ -34,6 +35,24 @@ class Chip8:
                         'E0', '90', '90', '90', 'E0',  # D
                         'F0', '80', 'F0', '80', 'F0',  # E
                         'F0', '80', 'F0', '80', '80']  # F
+        # see http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#keyboard
+        self.keyboard = [pygame.K_x, #0
+                         pygame.K_1, #1
+                         pygame.K_2, #2
+                         pygame.K_3, #3
+                         pygame.K_q, #4
+                         pygame.K_w, #5
+                         pygame.K_e, #6
+                         pygame.K_a, #7
+                         pygame.K_s, #8
+                         pygame.K_d, #9
+                         pygame.K_z, #A (10)
+                         pygame.K_c, #B (11)
+                         pygame.K_4, #C (12)
+                         pygame.K_r, #D (13)
+                         pygame.K_f, #E (14)
+                         pygame.K_v  #F (15)
+                         ]
         # store fontset in memory
         for index, byte in enumerate(self.fontSet):
             self.memory[index] = byte
@@ -52,11 +71,11 @@ class Chip8:
         opcodeFirstByte = str(self.memory[self.pc])
         opcodeLastByte = str(self.memory[self.pc+1])
         opcode = opcodeFirstByte + opcodeLastByte
-        print opcode
+        #print opcode
         pcIncrementBy = 2  # amount to increase pc by after cycle. 2 bytes by default
 
         if opcode == "00E0":  # clear screen
-            self.display.fill((0,0,0))
+            self.display.fill((0, 0, 0))
             self.drawFlag = True
 
         elif opcode == "00EE":  # return from subroutine
@@ -94,11 +113,11 @@ class Chip8:
         elif opcode[0] == "6":
             self.v[int(opcode[1], 16)] = opcodeLastByte.lower()
 
-        # 7XNN - Adds NN to V[X]
+        # 7XNN - Adds NN to V[X]. Wrap around if value is greater than 255.
         elif opcode[0] == "7":
             vx = int(self.v[int(opcode[1], 16)], 16)
             nn = int(opcodeLastByte, 16)
-            self.v[int(opcode[1], 16)] = hex(vx + nn)[2:]
+            self.v[int(opcode[1], 16)] = hex((vx + nn) % 256)[2:]
 
         # 8XY0 - Sets V[X] = V[Y]
         elif opcode[0] == "8" and opcode[3] == "0":
@@ -121,12 +140,12 @@ class Chip8:
             intVX = int(self.v[int(opcode[1], 16)], 16)
             intVY = int(self.v[int(opcode[2], 16)], 16)
             if intVX + intVY > 255:
-                self.v[0xf] = 1
+                self.v[0xf] = '01'
             else:
-                self.v[0xf] = 0
-            self.v[int(opcode[1], 16)] = hex(intVX + intVY)[2:]
+                self.v[0xf] = '00'
+            self.v[int(opcode[1], 16)] = hex((intVX + intVY) % 256)[2:]
 
-        # 8XY5 - Sets V[X]-= V[Y]. If V[X] - V[Y] < 0, then VF is set to 0, else set to 1
+        # 8XY5 - Sets V[X]-= V[Y]. If V[X] - V[Y] < 0, then VF is set to 0, else set to 1. Wrap around.
         elif opcode[0] == "8" and opcode[3] == "5":
             intVX = int(self.v[int(opcode[1], 16)], 16)
             intVY = int(self.v[int(opcode[2], 16)], 16)
@@ -134,7 +153,7 @@ class Chip8:
                 self.v[0xf] = '00'
             else:
                 self.v[0xf] = '01'
-            self.v[int(opcode[1], 16)] = hex(intVX - intVY)[2:]
+            self.v[int(opcode[1], 16)] = hex((intVX - intVY) % 256)[2:]
 
         # 8XY6 - Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
         elif opcode[0] == "8" and opcode[3] == "6":
@@ -143,7 +162,7 @@ class Chip8:
             self.v[int(opcode[1], 16)] = hex(intVX >> 1)[2:]
             self.v[0xf] = '0' + binVX[-1]
 
-        # 8XY7 - Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+        # 8XY7 - Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't. Wrap around.
         elif opcode[0] == "8" and opcode[3] == "7":
             intVX = int(self.v[int(opcode[1], 16)], 16)
             intVY = int(self.v[int(opcode[2], 16)], 16)
@@ -151,7 +170,7 @@ class Chip8:
                 self.v[0xf] = '00'
             else:
                 self.v[0xf] = '01'
-            self.v[int(opcode[1], 16)] = hex(intVY - intVX)[2:]
+            self.v[int(opcode[1], 16)] = hex((intVY - intVX) % 256)[2:]
 
         # 8XYE - Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift
         elif opcode[0] == "8" and opcode[3] == "E":
@@ -185,36 +204,65 @@ class Chip8:
             intVY = int(self.v[int(opcode[2], 16)], 16)
             height = int(opcode[3], 16)
             for iIterator in range(0, height):
-                spriteByteBinary = format(int(self.memory[int(self.i,16)+iIterator], 16), '08b')  # padded with zeroes
-                for bitIterator in range(0,8):
+                spriteByteBinary = format(int(self.memory[int(self.i, 16) + iIterator], 16), '08b')  # padded with zeroes
+                for bitIterator in range(0, 8):
                     if spriteByteBinary[bitIterator] == '1':  # need to toggle these pixels
-                        try:
-                            if self.pixelArray[intVX][intVY]:
-                                color = (0, 0, 0)  # black
-                                self.v[0xf] = '01'  # we're clearing a pixel, set V[F] = 1
-                            else:
-                                color = (255, 255, 255)  # white
-                        except:
-                            print opcode[1] + ': ' + str(intVX) + ',' + str(intVY)
-                        pygame.draw.rect(self.display, color, (intVX*8+(bitIterator*8),intVY*8+(height*8),8,8))
+                        if self.pixelArray[intVX][intVY]:
+                            color = (0, 0, 0)  # black
+                            self.v[0xf] = '01'  # we're clearing a pixel, set V[F] = 1
+                        else:
+                            color = (255, 255, 255)  # white
+                        pygame.draw.rect(self.display, color, (intVX*8+(bitIterator*8),intVY*8+(height*8), 8, 8))
                         self.pixelArray[intVX][intVY] = not self.pixelArray[intVX][intVY]  # toggle the pixel
                         self.drawFlag = True
+        elif opcodeFirstByte[0] == "D":
+            intVX = int(self.v[int(opcode[1], 16)], 16)
+            intVY = int(self.v[int(opcode[2], 16)], 16)
+            height = int(opcode[3], 16)
+            for iIterator in range(0, height):
+                spriteByteBinary = format(int(self.memory[int(self.i, 16) + iIterator], 16),
+                                          '08b')  # padded with zeroes
+                for bitIterator in range(0, 8):
+                    if spriteByteBinary[bitIterator] == '1':  # need to toggle these pixels
+                        if self.pixelArray[intVX][intVY]:
+                            color = (0, 0, 0)  # black
+                            self.v[0xf] = '01'  # we're clearing a pixel, set V[F] = 1
+                        else:
+                            color = (255, 255, 255)  # white
+                        pygame.draw.rect(self.display, color,
+                                         (intVX * 8 + (bitIterator * 8), intVY * 8 + (height * 8), 8, 8))
+                        self.pixelArray[intVX][intVY] = not self.pixelArray[intVX][
+                            intVY]  # toggle the pixel
+                        self.drawFlag = T
 
         # EX9E - Skips the next instruction if the key stored in VX is pressed.
         elif opcodeFirstByte[0] == "E" and opcodeLastByte == "9E":
-            pass
+            keyStates = pygame.key.get_pressed()
+            keyToCheck = int(self.v[int(opcode[1], 16)], 16)
+            if keyStates[self.keyboard[keyToCheck]]:
+                pcIncrementBy = 4
 
         # EXA1 - Skips the next instruction if the key stored in VX isn't pressed.
         elif opcodeFirstByte[0] == "E" and opcodeLastByte == "A1":
-            pass
+            keyStates = pygame.key.get_pressed()
+            keyToCheck = int(self.v[int(opcode[1], 16)], 16)
+            if not keyStates[self.keyboard[keyToCheck]]:
+                pcIncrementBy = 4
 
         # FX07 - Sets VX to the value of the delay timer.
         elif opcodeFirstByte[0] == "F" and opcodeLastByte == "07":
             self.v[int(opcode[1], 16)] = self.delayTimer
 
         # FX0A - A key press is awaited, and then stored in VX.
+        #        All execution stops while waiting for a keypress.
         elif opcodeFirstByte[0] == "F" and opcodeLastByte == "0A":
-            pass
+            keyStates = pygame.key.get_pressed()
+            pcIncrementBy = 0  # keep pc on this opcode until a key is pressed
+            for pygameKey in self.keyboard:
+                if keyStates[pygameKey]:
+                    pcIncrementBy = 2
+                    self.v[int(opcode[1], 16)] = opcode[1]
+                    break
 
         # FX15 - Sets the delay timer to VX.
         elif opcodeFirstByte[0] == "F" and opcodeLastByte == "15":
@@ -228,7 +276,7 @@ class Chip8:
         elif opcodeFirstByte[0] == "F" and opcodeLastByte == "1E":
             intVX = int(self.v[int(opcode[1], 16)], 16)
             intI = int(self.i, 16)
-            self.i = hex(intI + intVX)[2:]
+            self.i = hex((intI + intVX) % 256)[2:]
 
         # FX29- Sets I to the location of the sprite for the character in VX.
         #       Characters 0-F (in hexadecimal) are represented by a 4x5 font.
@@ -270,5 +318,6 @@ class Chip8:
 
     def getDrawFlag(self):
         return self.drawFlag
+
     def setDrawFlag(self, value):
         self.drawFlag = value
