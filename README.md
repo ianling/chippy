@@ -1,6 +1,6 @@
 CHIP-8 emulator written in python
 
-![PONG screenshot](http://i.imgur.com/eD7VSMK.png)
+<img height="283" src="http://i.imgur.com/eD7VSMK.png" />
 
 Resources:
 http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/ -- General CHIP-8 information, getting started
