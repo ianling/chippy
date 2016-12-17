@@ -19,7 +19,7 @@ def main():
     clock = pygame.time.Clock()
 
 #    chip8 = Chip8('M:/BACKUPS/Coding/Python/roms/PONG')
-    chip8 = Chip8(pygame.display.set_mode((512, 256)), 'C:/Users/Ian Ling/Documents/bk/chip8/roms/PONG')
+    chip8 = Chip8(pygame.display.set_mode((512, 256)), 'C:/Users/Ian Ling/Documents/bk/chip8/roms/PONG2')
 
     while True:
         # if we're updating the screen, make sure the screen only updates at 60FPS max

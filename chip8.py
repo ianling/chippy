@@ -36,22 +36,22 @@ class Chip8:
                         'F0', '80', 'F0', '80', 'F0',  # E
                         'F0', '80', 'F0', '80', '80']  # F
         # see http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#keyboard
-        self.keyboard = [pygame.K_x, #0
-                         pygame.K_1, #1
-                         pygame.K_2, #2
-                         pygame.K_3, #3
-                         pygame.K_q, #4
-                         pygame.K_w, #5
-                         pygame.K_e, #6
-                         pygame.K_a, #7
-                         pygame.K_s, #8
-                         pygame.K_d, #9
-                         pygame.K_z, #A (10)
-                         pygame.K_c, #B (11)
-                         pygame.K_4, #C (12)
-                         pygame.K_r, #D (13)
-                         pygame.K_f, #E (14)
-                         pygame.K_v  #F (15)
+        self.keyboard = [pygame.K_x,  #0
+                         pygame.K_1,  #1
+                         pygame.K_2,  #2
+                         pygame.K_3,  #3
+                         pygame.K_q,  #4
+                         pygame.K_w,  #5
+                         pygame.K_e,  #6
+                         pygame.K_a,  #7
+                         pygame.K_s,  #8
+                         pygame.K_d,  #9
+                         pygame.K_z,  #A (10)
+                         pygame.K_c,  #B (11)
+                         pygame.K_4,  #C (12)
+                         pygame.K_r,  #D (13)
+                         pygame.K_f,  #E (14)
+                         pygame.K_v   #F (15)
                          ]
         # store fontset in memory
         for index, byte in enumerate(self.fontSet):
@@ -96,17 +96,17 @@ class Chip8:
 
         # 3XNN - Skips the next instruction if V[X] == NN
         elif opcode[0] == "3":
-            if self.v[int(opcode[1], 16)].upper() == opcodeLastByte:
+            if int(self.v[int(opcode[1], 16)], 16) == int(opcodeLastByte, 16):
                 pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
         # 4XNN - Skips the next instruction if V[X] != NN
         elif opcode[0] == "4":
-            if self.v[int(opcode[1], 16)].upper() != opcodeLastByte:
+            if int(self.v[int(opcode[1], 16)], 16) != int(opcodeLastByte, 16):
                 pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
         # 5XY0 - Skips the next instruction if V[X] == V[Y]
         elif opcode[0] == "5":
-            if self.v[int(opcode[1], 16)] == self.v[int(opcode[2], 16)]:
+            if int(self.v[int(opcode[1], 16)], 16) == int(self.v[int(opcode[2], 16)], 16):
                 pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
         # 6XNN - Sets V[X] to NN
@@ -181,7 +181,7 @@ class Chip8:
 
         # 9XY0 - Skips the next instruction if VX doesn't equal VY.
         elif opcodeFirstByte[0] == "9":
-            if self.v[int(opcode[1], 16)] != self.v[int(opcode[2], 16)]:
+            if int(self.v[int(opcode[1], 16)], 16) != int(self.v[int(opcode[2], 16)], 16):
                 pcIncrementBy = 4  # jump ahead 4 bytes instead of the usual 2
 
         # ANNN - Sets I to the address NNN
@@ -200,40 +200,22 @@ class Chip8:
         #        N is the number of 8bit rows that need to be drawn.
         #        If N is greater than 1, second line continues at position V[X], V[Y+1], and so on.
         elif opcodeFirstByte[0] == "D":
-            intVX = int(self.v[int(opcode[1], 16)], 16)
-            intVY = int(self.v[int(opcode[2], 16)], 16)
+            intVX = int(self.v[int(opcode[1], 16)], 16) % 64
+            intVY = int(self.v[int(opcode[2], 16)], 16) % 32
             height = int(opcode[3], 16)
-            for iIterator in range(0, height):
-                spriteByteBinary = format(int(self.memory[int(self.i, 16) + iIterator], 16), '08b')  # padded with zeroes
-                for bitIterator in range(0, 8):
+            self.v[0xf] = '00'
+            for heightIterator in range(0, height):
+                spriteByteBinary = format(int(self.memory[int(self.i, 16) + heightIterator], 16), '08b')  # padded with zeroes
+                for bitIterator in range(0, 8):  # rows are 8 bits long
                     if spriteByteBinary[bitIterator] == '1':  # need to toggle these pixels
-                        if self.pixelArray[intVX][intVY]:
+                        if self.pixelArray[(intVX+bitIterator)%64][(intVY+heightIterator)%32]:
                             color = (0, 0, 0)  # black
                             self.v[0xf] = '01'  # we're clearing a pixel, set V[F] = 1
                         else:
                             color = (255, 255, 255)  # white
-                        pygame.draw.rect(self.display, color, (intVX*8+(bitIterator*8),intVY*8+(height*8), 8, 8))
-                        self.pixelArray[intVX][intVY] = not self.pixelArray[intVX][intVY]  # toggle the pixel
+                        pygame.draw.rect(self.display, color, (intVX * 8 + (bitIterator * 8), intVY * 8 + (heightIterator*8), 8, 8))
+                        self.pixelArray[(intVX+bitIterator)%64][(intVY+heightIterator)%32] = not self.pixelArray[(intVX+bitIterator)%64][(intVY+heightIterator)%32]  # toggle the pixel
                         self.drawFlag = True
-        elif opcodeFirstByte[0] == "D":
-            intVX = int(self.v[int(opcode[1], 16)], 16)
-            intVY = int(self.v[int(opcode[2], 16)], 16)
-            height = int(opcode[3], 16)
-            for iIterator in range(0, height):
-                spriteByteBinary = format(int(self.memory[int(self.i, 16) + iIterator], 16),
-                                          '08b')  # padded with zeroes
-                for bitIterator in range(0, 8):
-                    if spriteByteBinary[bitIterator] == '1':  # need to toggle these pixels
-                        if self.pixelArray[intVX][intVY]:
-                            color = (0, 0, 0)  # black
-                            self.v[0xf] = '01'  # we're clearing a pixel, set V[F] = 1
-                        else:
-                            color = (255, 255, 255)  # white
-                        pygame.draw.rect(self.display, color,
-                                         (intVX * 8 + (bitIterator * 8), intVY * 8 + (height * 8), 8, 8))
-                        self.pixelArray[intVX][intVY] = not self.pixelArray[intVX][
-                            intVY]  # toggle the pixel
-                        self.drawFlag = T
 
         # EX9E - Skips the next instruction if the key stored in VX is pressed.
         elif opcodeFirstByte[0] == "E" and opcodeLastByte == "9E":
@@ -276,14 +258,13 @@ class Chip8:
         elif opcodeFirstByte[0] == "F" and opcodeLastByte == "1E":
             intVX = int(self.v[int(opcode[1], 16)], 16)
             intI = int(self.i, 16)
-            self.i = hex((intI + intVX) % 256)[2:]
+            self.i = hex((intI + intVX))[2:]
 
         # FX29- Sets I to the location of the sprite for the character in VX.
         #       Characters 0-F (in hexadecimal) are represented by a 4x5 font.
         elif opcodeFirstByte[0] == "F" and opcodeLastByte == "29":
             intVX = int(self.v[int(opcode[1], 16)], 16)
             self.i = hex(intVX * 5)
-            print self.i + ' for character ' + str(intVX)
 
         # FX33- Stores the Binary-coded decimal representation of VX,
         #       with the most significant of three digits at the address in I,
