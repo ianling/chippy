@@ -36,22 +36,22 @@ class Chip8:
                         'F0', '80', 'F0', '80', 'F0',  # E
                         'F0', '80', 'F0', '80', '80']  # F
         # see http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#keyboard
-        self.keyboard = [pygame.K_x,  #0
-                         pygame.K_1,  #1
-                         pygame.K_2,  #2
-                         pygame.K_3,  #3
-                         pygame.K_q,  #4
-                         pygame.K_w,  #5
-                         pygame.K_e,  #6
-                         pygame.K_a,  #7
-                         pygame.K_s,  #8
-                         pygame.K_d,  #9
-                         pygame.K_z,  #A (10)
-                         pygame.K_c,  #B (11)
-                         pygame.K_4,  #C (12)
-                         pygame.K_r,  #D (13)
-                         pygame.K_f,  #E (14)
-                         pygame.K_v   #F (15)
+        self.keyboard = [pygame.K_x,  # 0
+                         pygame.K_1,  # 1
+                         pygame.K_2,  # 2
+                         pygame.K_3,  # 3
+                         pygame.K_q,  # 4
+                         pygame.K_w,  # 5
+                         pygame.K_e,  # 6
+                         pygame.K_a,  # 7
+                         pygame.K_s,  # 8
+                         pygame.K_d,  # 9
+                         pygame.K_z,  # A (10)
+                         pygame.K_c,  # B (11)
+                         pygame.K_4,  # C (12)
+                         pygame.K_r,  # D (13)
+                         pygame.K_f,  # E (14)
+                         pygame.K_v   # F (15)
                          ]
         # store fontset in memory
         for index, byte in enumerate(self.fontSet):
@@ -71,8 +71,7 @@ class Chip8:
         opcodeFirstByte = str(self.memory[self.pc])
         opcodeLastByte = str(self.memory[self.pc+1])
         opcode = opcodeFirstByte + opcodeLastByte
-        #print opcode
-        pcIncrementBy = 2  # amount to increase pc by after cycle. 2 bytes by default
+        pcIncrementBy = 2  # amount to increase pc by after instruction. 2 bytes by default
 
         if opcode == "00E0":  # clear screen
             self.display.fill((0, 0, 0))
